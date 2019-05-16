@@ -5,46 +5,50 @@ const cheerio = require('cheerio');
 const app = express();
 
 async function crawlPage(baseUrl, endpoint = '', usedInternals = []) {
-    const url = `${baseUrl}${endpoint}`;
-    const res = await axios.get(url);
+    try {
+        const url = `${baseUrl}${endpoint}`;
+        let res;
+            res = await axios.get(url);
+        
 
-    let external = [];
-    let internal = [];
+        let external = [];
+        let internal = [];
 
-    if (res.status === 200) {
-        let $ = cheerio.load(res.data);
+        if (res.status === 200) {
+            let $ = cheerio.load(res.data);
 
-        $('a').each((key, value) => {
-            const hrefValue = value.attribs.href || '';
+            $('a').each((key, value) => {
+                const hrefValue = value.attribs.href || '';
 
-            if (hrefValue.startsWith('http')) {
-                external.push(hrefValue);
-            } else {
-                const nextLink = `${baseUrl}${hrefValue}`;
+                if (hrefValue.startsWith('http')) {
+                    external.push(hrefValue);
+                } else {
+                    const nextLink = `${baseUrl}${hrefValue}`;
 
-                if (usedInternals.indexOf(nextLink) === -1) {
-                    usedInternals.push(nextLink);
-                    internal.push(hrefValue);
+                    if (usedInternals.indexOf(nextLink) === -1) {
+                        usedInternals.push(nextLink);
+                        internal.push(hrefValue);
+                    }
                 }
+            });
+
+            internal.forEach(_url => {
+                const data = crawlPage(baseUrl, _url, usedInternals);
+
+                external = [...external, ...data.external || []];
+                internal = [...internal, ...data.internal || []];
+            });
+
+            return {
+                internal,
+                external
             }
-        });
-
-        internal.forEach(_url => {
-            const data = crawlPage(baseUrl, _url, usedInternals);
-
-            external = [...external, ...data.external || []];
-            internal = [...internal, ...data.internal || []];
-        });
-
-        return {
-            internal,
-            external
         }
-    }
-
-    return {
-        internal: [],
-        external: []
+    } catch(err) {
+        return {
+            internal: [],
+            external: []
+        }
     }
 }
 
