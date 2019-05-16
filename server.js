@@ -7,9 +7,7 @@ const app = express();
 async function crawlPage(baseUrl, endpoint = '', usedInternals = []) {
     try {
         const url = `${baseUrl}${endpoint}`;
-        let res;
-            res = await axios.get(url);
-        
+        let res = await axios.get(url);
 
         let external = [];
         let internal = [];
