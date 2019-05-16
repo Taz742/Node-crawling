@@ -1,8 +1,52 @@
-const request = require('request');
-const cheerio = require('cheerio');
 const express = require('express');
+const axios = require('axios');
+const cheerio = require('cheerio');
 
 const app = express();
+
+async function crawlPage(baseUrl, endpoint = '', usedInternals = []) {
+    const url = `${baseUrl}${endpoint}`;
+    const res = await axios.get(url);
+
+    let external = [];
+    let internal = [];
+
+    if (res.status === 200) {
+        let $ = cheerio.load(res.data);
+
+        $('a').each((key, value) => {
+            const hrefValue = value.attribs.href || '';
+
+            if (hrefValue.startsWith('http')) {
+                external.push(hrefValue);
+            } else {
+                const nextLink = `${baseUrl}${hrefValue}`;
+
+                if (usedInternals.indexOf(nextLink) === -1) {
+                    usedInternals.push(nextLink);
+                    internal.push(hrefValue);
+                }
+            }
+        });
+
+        internal.forEach(_url => {
+            const data = crawlPage(baseUrl, _url, usedInternals);
+
+            external = [...external, ...data.external || []];
+            internal = [...internal, ...data.internal || []];
+        });
+
+        return {
+            internal,
+            external
+        }
+    }
+
+    return {
+        internal: [],
+        external: []
+    }
+}
 
 app.get('/', (req, res) => {
     const { link } = req.query;
@@ -13,34 +57,13 @@ app.get('/', (req, res) => {
         });
     }
 
-    request(link, function (err, _res, body) { 
-        if(err) {
-            res.status(403).send({
-                message: 'something went wrong',
-                detail: err,
-            }); 
-        } else { 
-            const external = [];
-            const internal = [];
-
-            let $ = cheerio.load(body);
-
-            $('a').each((key, value) => {
-                const hrefValue = value.attribs.href;
-                if (hrefValue.startsWith('http')) {
-                    external.push(hrefValue);
-                } else {
-                    internal.push(hrefValue);
-                }
-            });
-
-            res.status(200).send({
-                external,
-                internal
-            });
-        }
-    });   
-})
+    crawlPage(link).then(resp => {
+        res.status(200).send(resp);
+    }).catch(err => {
+        console.log(err);
+        res.status(403).send(err);
+    });
+});
 
 const PORT = 3000;
 
