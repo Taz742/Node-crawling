@@ -27,7 +27,7 @@ app.get('/', (req, res) => {
 
             $('a').each((key, value) => {
                 const hrefValue = value.attribs.href;
-                if (hrefValue.startsWith('http') || hrefValue.startsWith('https')) {
+                if (hrefValue.startsWith('http')) {
                     external.push(hrefValue);
                 } else {
                     internal.push(hrefValue);
