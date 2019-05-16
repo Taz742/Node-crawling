@@ -1,0 +1,17 @@
+{
+  "name": "crawling",
+  "version": "1.0.0",
+  "description": "Web crawling with nodejs",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "nodemon server.js"
+  },
+  "author": "Taz742",
+  "license": "ISC",
+  "dependencies": {
+    "cheerio": "^1.0.0-rc.3",
+    "express": "^4.16.4",
+    "request": "^2.88.0"
+  }
+}
